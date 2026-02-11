@@ -1,0 +1,231 @@
+/* style.css – no comments, pure style */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+    background: #000;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+canvas {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    pointer-events: auto;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.5rem 2rem 2rem 2rem;
+}
+
+.top-bar {
+    pointer-events: auto;
+    display: flex;
+    justify-content: center;
+}
+
+.prayer-times {
+    background: rgba(8, 15, 30, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 140, 0.25);
+    border-radius: 60px;
+    padding: 0.7rem 1.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 1.2rem;
+    color: #ffe9c7;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    font-size: 1rem;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+}
+
+#next-prayer {
+    text-shadow: 0 0 8px rgba(255,220,150,0.5);
+}
+
+#countdown {
+    background: rgba(255,200,120,0.15);
+    padding: 0.2rem 0.9rem;
+    border-radius: 40px;
+    border-left: 1px solid rgba(255,200,120,0.6);
+    font-weight: 500;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: #ffdcaa;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.2rem;
+    transition: 0.2s;
+}
+
+.icon-btn:hover {
+    color: #ffb86b;
+    text-shadow: 0 0 10px #ffb86b;
+}
+
+.music-player {
+    pointer-events: auto;
+    background: rgba(5, 10, 20, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 48px;
+    padding: 0.8rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 780px;
+    margin: 0 auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    transition: all 0.2s;
+}
+
+.track-info {
+    flex: 1;
+    overflow: hidden;
+    margin-right: 1.2rem;
+}
+
+.marquee {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: scrollText 12s linear infinite;
+    color: #fff3e0;
+    font-size: 1rem;
+    font-weight: 350;
+    letter-spacing: 0.5px;
+    opacity: 0.95;
+}
+
+@keyframes scrollText {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(0); }
+    80% { transform: translateX(calc(-100% + 180px)); }
+    100% { transform: translateX(calc(-100% + 180px)); }
+}
+
+.controls {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+}
+
+.control-btn {
+    background: transparent;
+    border: none;
+    color: #f0dbc0;
+    font-size: 1.3rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.18s;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    transform: scale(1.1);
+}
+
+#file-input {
+    display: none;
+}
+
+.notification {
+    pointer-events: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px);
+    border: 2px solid #ffd966;
+    border-radius: 32px;
+    padding: 1.2rem 2rem;
+    min-width: 300px;
+    text-align: center;
+    animation: blinkBorder 1.2s infinite ease-in-out;
+    box-shadow: 0 0 40px rgba(255, 200, 0, 0.3);
+}
+
+@keyframes blinkBorder {
+    0% { border-color: #ffd966; box-shadow: 0 0 30px rgba(255, 200, 0, 0.3); }
+    50% { border-color: #ffaa33; box-shadow: 0 0 60px rgba(255, 170, 0, 0.7); }
+    100% { border-color: #ffd966; box-shadow: 0 0 30px rgba(255, 200, 0, 0.3); }
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: #fff7e6;
+    font-size: 1.3rem;
+    font-weight: 500;
+}
+
+#close-notification {
+    background: transparent;
+    border: none;
+    color: #ffd699;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.2rem;
+    line-height: 1;
+    transition: 0.2s;
+}
+
+#close-notification:hover {
+    color: white;
+    transform: scale(1.2);
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .overlay { padding: 1rem 1rem 1.5rem; }
+    .music-player { flex-direction: column; padding: 1rem; max-width: 95%; }
+    .track-info { width: 100%; margin-bottom: 0.6rem; margin-right: 0; }
+    .controls { justify-content: center; }
+    .prayer-times { font-size: 0.85rem; padding: 0.5rem 1.2rem; gap: 0.7rem; }
+}
+
+@media (max-width: 480px) {
+    .prayer-times { flex-wrap: wrap; justify-content: center; }
+    #countdown { width: 100%; text-align: center; }
+    .notification { min-width: 260px; }
+}
