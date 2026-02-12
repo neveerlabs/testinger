@@ -101,6 +101,8 @@ let currentTrackIndex = -1;
 let musicAudio = new Audio();
 let isMusicPlaying = false;
 let wasPlayingBeforeAdhan = false;
+const DEFAULT_MUSIC_VOLUME = 0.7;
+musicAudio.volume = DEFAULT_MUSIC_VOLUME;
 
 const trackNameEl = document.getElementById('track-name');
 const playPauseBtn = document.getElementById('play-pause-btn');
@@ -111,15 +113,34 @@ const uploadBtn = document.getElementById('upload-btn');
 const fileInput = document.getElementById('file-input');
 const notificationBox = document.getElementById('notification-box');
 const notificationMsg = document.getElementById('notification-message');
+const notificationIcon = document.getElementById('notification-icon');
 const closeNotif = document.getElementById('close-notification');
 
 let currentLocation = { lat: -6.2088, lon: 106.8456 };
 let prayerTimings = {};
 let prayerTimeouts = [];
+let originalMusicVolume = DEFAULT_MUSIC_VOLUME;
+
+const PRAYER_MAP = {
+    Fajr: 'Subuh',
+    Dhuhr: 'Zuhur',
+    Asr: 'Ashar',
+    Maghrib: 'Maghrib',
+    Isha: 'Isya'
+};
+
+const PRAYER_ICONS = {
+    Subuh: 'fa-cloud',
+    Zuhur: 'fa-sun',
+    Ashar: 'fa-sun',
+    Maghrib: 'fa-moon',
+    Isya: 'fa-star'
+};
 
 closeNotif.addEventListener('click', () => notificationBox.classList.add('hidden'));
 
-function showNotification(message) {
+function showNotification(message, iconClass = 'fa-bell') {
+    notificationIcon.className = `fas ${iconClass}`;
     notificationMsg.textContent = message;
     notificationBox.classList.remove('hidden');
 }
@@ -201,23 +222,63 @@ fileInput.addEventListener('change', (e) => {
 });
 
 function setVolumeMaxAndPauseForAlarm() {
+    wasPlayingBeforeAdhan = isMusicPlaying;
     pauseMusic();
+    originalMusicVolume = musicAudio.volume;
+    musicAudio.volume = 1.0;
     audioAlarm.volume = 1.0;
     audioAlarm.play().catch(() => {});
-    showNotification('⏰ alarm • '.concat(new Date().toLocaleTimeString('id')));
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('id', { hour: '2-digit', minute: '2-digit' });
+    showNotification(`10 menit sebelum Subuh • ${timeString}`, 'fa-hourglass-half');
 }
 
 function handleAdhan(prayerName) {
     wasPlayingBeforeAdhan = isMusicPlaying;
     pauseMusic();
+    originalMusicVolume = musicAudio.volume;
+    musicAudio.volume = 1.0;
     audioAdzan.volume = 1.0;
     audioAdzan.play().catch(() => {});
-    showNotification('🕋 waktu sholat • '.concat(prayerName));
+    const indonesianName = PRAYER_MAP[prayerName] || prayerName;
+    showNotification(`Waktu ${indonesianName}`, 'fa-mosque');
 }
 
-audioAdzan.addEventListener('ended', () => {
-    if (wasPlayingBeforeAdhan) resumeMusic();
-});
+function restoreAudioState() {
+    musicAudio.volume = originalMusicVolume;
+    if (wasPlayingBeforeAdhan) {
+        resumeMusic();
+    }
+}
+
+audioAlarm.addEventListener('ended', restoreAudioState);
+audioAdzan.addEventListener('ended', restoreAudioState);
+
+function formatTimeToHHMM(date) {
+    return date.toLocaleTimeString('id', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function updatePrayerScheduleBox(timings) {
+    const dateElem = document.getElementById('schedule-date');
+    const today = new Date();
+    dateElem.textContent = today.toLocaleDateString('id', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    const prayerIds = {
+        Subuh: 'prayer-time-subuh',
+        Zuhur: 'prayer-time-zuhur',
+        Ashar: 'prayer-time-ashar',
+        Maghrib: 'prayer-time-maghrib',
+        Isya: 'prayer-time-isya'
+    };
+
+    for (const [english, indonesian] of Object.entries(PRAYER_MAP)) {
+        const timeStr = timings[english];
+        if (timeStr) {
+            const elem = document.getElementById(prayerIds[indonesian]);
+            if (elem) elem.textContent = timeStr;
+        }
+    }
+}
 
 async function fetchPrayerTimes(lat, lon) {
     const date = new Date();
@@ -231,6 +292,7 @@ function schedulePrayerEvents(timings) {
     prayerTimeouts = [];
     const now = new Date();
     const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    
     prayers.forEach(name => {
         const timeStr = timings[name];
         if (!timeStr) return;
@@ -238,20 +300,24 @@ function schedulePrayerEvents(timings) {
         const prayerDate = new Date(now);
         prayerDate.setHours(h, m, 0, 0);
         if (prayerDate < now) prayerDate.setDate(prayerDate.getDate() + 1);
+        
         const adhanTime = prayerDate.getTime();
         const alarmTime = adhanTime - 10 * 60 * 1000;
         const nowTime = now.getTime();
+        
         if (alarmTime > nowTime) {
             prayerTimeouts.push(setTimeout(() => {
                 setVolumeMaxAndPauseForAlarm();
             }, alarmTime - nowTime));
         }
+        
         if (adhanTime > nowTime) {
             prayerTimeouts.push(setTimeout(() => {
                 handleAdhan(name);
             }, adhanTime - nowTime));
         }
     });
+    
     const midnight = new Date(now);
     midnight.setDate(midnight.getDate() + 1);
     midnight.setHours(0, 0, 0, 0);
@@ -265,6 +331,7 @@ function updateNextPrayerUI(timings) {
     const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     let next = null;
     let nextName = '';
+    
     for (let name of prayers) {
         const timeStr = timings[name];
         if (!timeStr) continue;
@@ -277,23 +344,29 @@ function updateNextPrayerUI(timings) {
             nextName = name;
         }
     }
+    
     if (next) {
         const diff = next - now;
         const hours = Math.floor(diff / 3600000);
         const minutes = Math.floor((diff % 3600000) / 60000);
-        document.getElementById('next-prayer').innerHTML = `${nextName} <span style="opacity:0.8;">•</span> ${next.toLocaleTimeString('id', {hour:'2-digit', minute:'2-digit'})}`;
+        const indonesianName = PRAYER_MAP[nextName] || nextName;
+        document.getElementById('next-prayer').innerHTML = `${indonesianName} <span style="opacity:0.8;">•</span> ${next.toLocaleTimeString('id', {hour:'2-digit', minute:'2-digit'})}`;
         document.getElementById('countdown').textContent = `${hours}j ${minutes}m`;
     }
 }
 
-async function fetchAndSchedule() {
+async function fetchAndSchedule(retryCount = 0) {
     try {
         const timings = await fetchPrayerTimes(currentLocation.lat, currentLocation.lon);
         prayerTimings = timings;
         schedulePrayerEvents(timings);
         updateNextPrayerUI(timings);
-    } catch {
+        updatePrayerScheduleBox(timings);
+    } catch (error) {
         document.getElementById('next-prayer').textContent = 'jadwal tidak tersedia';
+        if (retryCount < 3) {
+            setTimeout(() => fetchAndSchedule(retryCount + 1), 5000 * (retryCount + 1));
+        }
     }
 }
 
@@ -314,13 +387,40 @@ function getLocationAndFetch() {
                         } else fetchAndSchedule();
                     })
                     .catch(() => fetchAndSchedule());
-            }
+            },
+            { timeout: 10000, maximumAge: 60000 }
         );
-    } else fetchAndSchedule();
+    } else {
+        fetchAndSchedule();
+    }
 }
 
 document.getElementById('refresh-location').addEventListener('click', getLocationAndFetch);
 getLocationAndFetch();
+
 setInterval(() => {
-    if (prayerTimings) updateNextPrayerUI(prayerTimings);
+    if (prayerTimings && Object.keys(prayerTimings).length) {
+        updateNextPrayerUI(prayerTimings);
+    }
 }, 1000);
+
+setInterval(() => {
+    const now = new Date();
+    const dateElem = document.getElementById('schedule-date');
+    if (dateElem) {
+        dateElem.textContent = now.toLocaleDateString('id', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+}, 60000);
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+}
+
+window.addEventListener('beforeunload', () => {
+    prayerTimeouts.forEach(clearTimeout);
+    if (musicAudio && !musicAudio.paused) {
+        musicAudio.pause();
+    }
+});
