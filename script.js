@@ -221,7 +221,7 @@ fileInput.addEventListener('change', (e) => {
     if (!isMusicPlaying && !musicAudio.src) playTrack(0);
 });
 
-function setVolumeMaxAndPauseForAlarm() {
+function setVolumeMaxAndPauseForAlarm(prayerName) {
     wasPlayingBeforeAdhan = isMusicPlaying;
     pauseMusic();
     originalMusicVolume = musicAudio.volume;
@@ -230,7 +230,8 @@ function setVolumeMaxAndPauseForAlarm() {
     audioAlarm.play().catch(() => {});
     const now = new Date();
     const timeString = now.toLocaleTimeString('id', { hour: '2-digit', minute: '2-digit' });
-    showNotification(`10 menit sebelum Subuh • ${timeString}`, 'fa-hourglass-half');
+    const indonesianName = PRAYER_MAP[prayerName] || prayerName;
+    showNotification(`10 menit sebelum ${indonesianName} • ${timeString}`, 'fa-hourglass-half');
 }
 
 function handleAdhan(prayerName) {
@@ -260,8 +261,10 @@ function formatTimeToHHMM(date) {
 
 function updatePrayerScheduleBox(timings) {
     const dateElem = document.getElementById('schedule-date');
-    const today = new Date();
-    dateElem.textContent = today.toLocaleDateString('id', { day: 'numeric', month: 'long', year: 'numeric' });
+    if (dateElem) {
+        const today = new Date();
+        dateElem.textContent = today.toLocaleDateString('id', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
     
     const prayerIds = {
         Subuh: 'prayer-time-subuh',
@@ -275,7 +278,11 @@ function updatePrayerScheduleBox(timings) {
         const timeStr = timings[english];
         if (timeStr) {
             const elem = document.getElementById(prayerIds[indonesian]);
-            if (elem) elem.textContent = timeStr;
+            if (elem) {
+                elem.textContent = timeStr;
+            } else {
+                console.warn(`Elemen jadwal untuk ${indonesian} tidak ditemukan`);
+            }
         }
     }
 }
@@ -307,7 +314,7 @@ function schedulePrayerEvents(timings) {
         
         if (alarmTime > nowTime) {
             prayerTimeouts.push(setTimeout(() => {
-                setVolumeMaxAndPauseForAlarm();
+                setVolumeMaxAndPauseForAlarm(name);
             }, alarmTime - nowTime));
         }
         
@@ -409,6 +416,9 @@ setInterval(() => {
     const dateElem = document.getElementById('schedule-date');
     if (dateElem) {
         dateElem.textContent = now.toLocaleDateString('id', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    if (prayerTimings && Object.keys(prayerTimings).length) {
+        updatePrayerScheduleBox(prayerTimings);
     }
 }, 60000);
 
